@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MenuActivity">
+
+    <fragment
+        android:id="@+id/fragment"
+        android:name="com.example.myapplication.ProfileFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="63"
+        tools:layout="@layout/fragment_profile" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        android:layout_weight="6"
+        android:background="@drawable/round"
+        android:gravity="bottom"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#66AD76"
+            android:fontFamily="sans-serif-black"
+            android:onClick="onNewsClick"
+            android:text="@string/news"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            tools:ignore="ButtonStyle,NestedWeights" />
+
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#66AD76"
+            android:fontFamily="sans-serif-black"
+            android:onClick="onFindClick"
+            android:text="@string/find"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#66AD76"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/todo"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#66AD76"
+            android:fontFamily="sans-serif-black"
+            android:onClick="onProfileClick"
+            android:text="@string/profile"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            tools:ignore="ButtonStyle" />
+    </LinearLayout>
+</LinearLayout>
