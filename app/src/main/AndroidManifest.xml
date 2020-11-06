@@ -20,10 +20,6 @@
         </activity>
         <activity android:name=".MenuActivity"
             android:launchMode="singleInstance"/>
-        <activity android:name=".FindActivity"
-            android:launchMode="singleInstance"/>
-        <activity android:name=".NewsActivity"
-            android:launchMode="singleInstance"/>
     </application>
 
 </manifest>
