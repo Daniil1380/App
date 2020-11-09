@@ -261,3 +261,40 @@ public class AdapterBib extends RecyclerView.Adapter<AdapterBib.BibLibViewHolder
 }
 
 ```
+
+### Листинг 5: BibDatabaseTest.java
+
+    @Test
+      public void strictModeThrowsException() throws IOException {
+        BibDatabase database = openDatabase("/mixed.bib");
+        BibConfig cfg = database.getCfg();
+        cfg.strict = true;BibEntry first = database.getEntry(0);
+    	for (int i = 0; i < cfg.maxValid - 1; i++) {
+      		BibEntry unused = database.getEntry(0);
+      		assertNotNull("Should not throw any exception @" + i, first.getType());
+    	}
+    
+    	try {
+      		BibEntry unused = database.getEntry(0);
+      		first.getType();
+      		fail();
+    	} catch (IllegalStateException e) {
+      		System.out.println("Throw IllegalStateException with message: " + 			e.getMessage());
+    	}
+    
+    @Test
+      public void shuffleFlag() throws IOException {
+        boolean check = false;
+        BibDatabase firstDatabase = openDatabase("/shuffle.bib");
+        BibConfig cfg = firstDatabase.getCfg();
+        cfg.shuffle = false;
+        BibEntry first = firstDatabase.getEntry(0); // always ARTICLE
+        for (int i = 0; i < 20; i++) {
+      		BibDatabase database = openDatabase("/shuffle.bib");
+      		BibConfig databaseCfg = database.getCfg();
+      		databaseCfg.shuffle = true;
+      		if (database.getEntry(0).getType() != first.getType()) check = true;
+    	}
+    	assertTrue(check);
+    }
+
