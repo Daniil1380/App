@@ -11,6 +11,47 @@
 
 В классе `BibDatabaseTest.java`, в котором находятся тесты для библиотеки, в реализованных тестовых методах запрашиваются экземпляры класса `BibEntry`, которые хранят информацию о записях в формате bibtex. Данные экземпляры класса подсчитывают свой порядковый номер и сравнивают его при запросе (например `getField()`). Если же номер уже не является валидным, то бросается `IllegalStateException`, который мы и должны обработать.
 
+### Листинг 0: Тестирование
+
+```java
+@Test
+  public void strictModeThrowsException() throws IOException {
+    BibDatabase database = openDatabase("/mixed.bib");
+    BibConfig cfg = database.getCfg();
+    cfg.strict = true;BibEntry first = database.getEntry(0);
+	for (int i = 0; i < cfg.maxValid - 1; i++) {
+  		BibEntry unused = database.getEntry(0);
+  		assertNotNull("Should not throw any exception @" + i, first.getType());
+	}
+
+try{
+
+  		BibEntry unused = database.getEntry(0);
+  		first.getType();
+  		fail();
+	} catch (IllegalStateException e) {
+  		System.out.println("Throw IllegalStateException with message: " + 			e.getMessage());
+	}
+
+@Test
+  public void shuffleFlag() throws IOException {
+    boolean check = false;
+    BibDatabase firstDatabase = openDatabase("/shuffle.bib");
+    BibConfig cfg = firstDatabase.getCfg();
+    cfg.shuffle = false;
+    BibEntry first = firstDatabase.getEntry(0); // always ARTICLE
+    for (int i = 0; i < 20; i++) {
+  		BibDatabase database = openDatabase("/shuffle.bib");
+  		BibConfig databaseCfg = database.getCfg();
+  		databaseCfg.shuffle = true;
+  		if (database.getEntry(0).getType() != first.getType()) check = true;
+	}
+	assertTrue(check);
+}
+```
+
+
+
 ## Тест strictModeThrowsException()
 
 Метод `strictModeThrowsException()` реализован таким образом: создаем Entry, далее создаем цикл, где вытаскиваем `19 Entry` из нашей базы данных и так как у нас уже есть `20` записей, теперь нам достаточно вытащить лишь одну Entry и обратиться к первой Entry, чтобы получить ожидаемую реакцию. Далее запрашивается метод `getType()` для нашей самой первой `BibEntry`. При вызове метода выбрасывается ошибка `IllegalStateException`.
@@ -59,6 +100,123 @@
 
 В методе `getItemCount()` выводится количество элементов в списке, в данном случае они == Integer.MAX_VALUE для бесконечного списка и database.size() для ограниченного списка.
 
+### Листинг 1: fragment_news.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NewsFragment">
+<androidx.recyclerview.widget.RecyclerView
+    android:id="@+id/recycler_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+</FrameLayout>
+```
+
+### Листинг 2: biblib_entry.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/round"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_margin="16dp">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@drawable/round"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/author"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Author"
+            android:textColor="#FFFFFF"
+            android:textSize="16dp" />
+
+        <TextView
+            android:id="@+id/titleN"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/roundw"
+            android:text="Title"
+            android:textColor="#000000"
+            android:textSize="24dp" />
+    </LinearLayout>
+
+</LinearLayout>
+```
+
+
+
+### Листинг 3: Adapter
+
+```java
+public class AdapterBib extends RecyclerView.Adapter<AdapterBib.BibLibViewHolder> {
+BibDatabase database;
+
+AdapterBib(InputStream publications) throws IOException {
+    InputStreamReader reader = new InputStreamReader(publications);
+    database = new BibDatabase(reader);
+}
+
+@NonNull
+@Override
+public BibLibViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+    View view = inflater.inflate(R.layout.biblib_entry, parent, false);
+    return new BibLibViewHolder(view);
+}
+
+@Override
+public void onBindViewHolder(@NonNull BibLibViewHolder holder, int position) {
+    BibEntry entry = database.getEntry(position % database.size());
+    if (position % database.size() == 1) holder.image.setImageResource(R.drawable.cup);
+    else if (position % database.size() == 2 ) holder.image.setImageResource(R.drawable.face);
+    else holder.image.setImageResource(R.drawable.cat);
+    holder.textViewTitle.setText(entry.getField(Keys.TITLE));
+    holder.textViewAuthor.setText(entry.getField(Keys.AUTHOR));
+
+}
+
+@Override
+public int getItemCount() {
+    return Integer.MAX_VALUE;
+}
+
+static class BibLibViewHolder extends RecyclerView.ViewHolder {
+    TextView textViewTitle;
+    TextView textViewAuthor;
+    ImageView image;
+       public BibLibViewHolder(@NonNull View itemView) {
+        super(itemView);
+        image = itemView.findViewById(R.id.imageView);
+        textViewTitle = itemView.findViewById(R.id.titleN);
+        textViewAuthor = itemView.findViewById(R.id.author);
+
+    }
+}
+}
+```
+
 # 3. Бесконечный список
 
 Сделайте список из предыдущей задачи бесконечным: после последнего элемента все записи повторяются, начиная с первой.
@@ -75,87 +233,7 @@
 
 # Приложение:
 
-## Листинг 1: fragment_news.xml
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".NewsFragment">
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-</FrameLayout>
-```
-
-## Листинг 2: biblib_entry.xml
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/round"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:layout_margin="16dp">
-
-    <TextView
-        android:id="@+id/type"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/round"
-        android:gravity="center"
-        android:text="Type"
-        android:textColor="@android:color/background_light"
-        android:textSize="28dp" />
-
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/round"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/author"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Author"
-            android:textColor="#FFFFFF"
-            android:textSize="16dp" />
-
-        <TextView
-            android:id="@+id/year"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="end"
-            android:text="Day"
-            android:textColor="#FFFFFF"
-            android:textSize="14dp" />
-
-        <TextView
-            android:id="@+id/titleN"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Title"
-            android:textColor="#FFFFFF"
-            android:textSize="24dp" />
-    </LinearLayout>
-
-</LinearLayout>
-```
-
-## Листинг 3: NewsFragment.java
+## Листинг 4: NewsFragment.java
 
 ```java
 public class NewsFragment extends Fragment {
@@ -185,60 +263,7 @@ public class NewsFragment extends Fragment {
 }
 ```
 
-## Листинг 4: Adapter.java
 
-```java
-public class AdapterBib extends RecyclerView.Adapter<AdapterBib.BibLibViewHolder> {
-
-    BibDatabase database;
-
-    AdapterBib(InputStream publications) throws IOException {
-        InputStreamReader reader = new InputStreamReader(publications);
-        database = new BibDatabase(reader);
-    }
-
-    @NonNull
-    @Override
-    public BibLibViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view = inflater.inflate(R.layout.biblib_entry, parent, false);
-        return new BibLibViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull BibLibViewHolder holder, int position) {
-        BibEntry entry = database.getEntry(position % database.size());
-        if (position % database.size() == 1) holder.image.setImageResource(R.drawable.cup);
-        else if (position % database.size() == 2 ) holder.image.setImageResource(R.drawable.face);
-        else holder.image.setImageResource(R.drawable.cat);
-        holder.textViewTitle.setText(entry.getField(Keys.TITLE));
-        holder.textViewAuthor.setText(entry.getField(Keys.AUTHOR));
-
-    }
-
-    @Override
-    public int getItemCount() {
-        return Integer.MAX_VALUE;
-    }
-
-    static class BibLibViewHolder extends RecyclerView.ViewHolder {
-        TextView textViewTitle;
-        TextView textViewAuthor;
-        ImageView image;
-
-
-        public BibLibViewHolder(@NonNull View itemView) {
-            super(itemView);
-            image = itemView.findViewById(R.id.imageView);
-            textViewTitle = itemView.findViewById(R.id.titleN);
-            textViewAuthor = itemView.findViewById(R.id.author);
-
-        }
-    }
-}
-
-
-```
 
 ### Листинг 5: BibDatabaseTest.java
 
