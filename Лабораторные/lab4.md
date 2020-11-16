@@ -1,23 +1,27 @@
 # Цели работы
 
 - Ознакомиться с принципами работы adapter-based views
-- Получить практические навки разработки адаптеров для view
+- Получить практические навыки разработки адаптеров для view
 
 # 1. Знакомство с библиотекой (unit test)
 
 Ознакомьтесь со strict mode библиотеки, проиллюстрировав его работу unit-тестом.
 
-Библиотека имеет 2 режима работы: normal и strict. В strict mode работает искусственное ограничение: в памяти нельзя хранить более `name.ank.lab4.BibConfig#maxValid=20` записей одновременно. При извлечении `maxValid+1`-ой записи 1-ая извелеченная запись становится невалидной (при доступе к полям кидаются исключения `IllegalStateException` с сообщениями типа: `This object has already been invalidated. myOrder=%d, latestOrder=%d`).
+Библиотека имеет 2 режима работы: normal и strict. В `strict mode` работает искусственное ограничение: в памяти нельзя хранить более `20` записей одновременно. При извлечении 21-ой записи 1-ая извлечённая запись становится невалидной (при доступе к полям кидаются исключения `IllegalStateException`)
 
 В классе `BibDatabaseTest.java`, в котором находятся тесты для библиотеки, в реализованных тестовых методах запрашиваются экземпляры класса `BibEntry`, которые хранят информацию о записях в формате bibtex. Данные экземпляры класса подсчитывают свой порядковый номер и сравнивают его при запросе (например `getField()`). Если же номер уже не является валидным, то бросается `IllegalStateException`, который мы и должны обработать.
 
 ## Тест strictModeThrowsException()
 
-Метод `strictModeThrowsException()` реализован практически как и метод `normalModeDoesNotThrowException()`, но с некоторыми изменениями. Так как у нас стоит ограничение в 20 записей, а при вызове первой `BibEntry` вне цикла мы присваиваем ей 1 порядковый номер, то и количество повторений в цикле сокращено до `cfg.maxValid - 1`.  Таким образом, при вызове последнего `BibEntry` его порядковый номер будет равняться 20, и исключение не будет выброшено. Далее в блоке кода `try` создаётся ещё один новый `BibEntry` уже с порядковым номером 21 и запрашивается метод `getType()` для нашей самой первой `BibEntry`. При вызове метода выбрасывается ошибка `IllegalStateException`, которая в свою очередь обрабатывается в блоке `catch`. Таким образом, тест проходит проверку.
+Метод `strictModeThrowsException()` реализован таким образом: создаем Entry, далее создаем цикл, где вытаскиваем `19 Entry` из нашей базы данных и так как у нас уже есть `20` записей, теперь нам достаточно вытащить лишь одну Entry и обратиться к первой Entry, чтобы получить ожидаемую реакцию. Далее запрашивается метод `getType()` для нашей самой первой `BibEntry`. При вызове метода выбрасывается ошибка `IllegalStateException`.
 
 ## Тест shuffleFlag()
 
-Для проверки работы флага `shuffle` создан новый файл `shuffle.bib` с двумя записями разного типа. Первой записью в новом файле всегда хранится тип ARTICLE, поэтому мы открываем файл `shuffle.bib`, ставим флаг `shuffle = false` и достаём первую `BibEntry`, тип записи которой всегда является ARTICLE. Так мы ещё и проверяем работоспособность выключенного флага `shuffle`, так как по умолчанию он включён. Поскольку тест может быть не пройден, если метод не перемешает последовательность, поэтому эта операция повторяется несколько раз.
+Для проверки shuffle был использован новый .bibtex файл, в котором есть 3 разных Entry, 15 раз мы проверяем, получилось ли перемещать entry, и если операция хотя бы один раз из 1 выполнена, то тест считается пройденным. 
+
+Не идеальность теста: 
+
+Очевидно, что проверку функционала, завязанного на `Random` нужно производить, зная конкретные `seed`, в данном конкретном тесте все еще существует шанс не прохода данного теста, однако мной была предпринята попытка уменьшить вероятность такой ошибки, сейчас она равняется `1/3^15 = 6,96e-8`
 
 ## Сборка biblib.jar
 
@@ -25,7 +29,7 @@
 
 # 2. Знакомство с RecyclerView (Однородный список)
 
-![](https://github.com/Daniil1380/App/blob/master/%D0%9B%D0%B0%D0%B1%D0%BE%D1%80%D0%B0%D1%82%D0%BE%D1%80%D0%BD%D1%8B%D0%B5/lab4.png)
+![](https://github.com/Daniil1380/App/blob/master/%D0%9B%D0%B0%D0%B1%D0%BE%D1%80%D0%B0%D1%82%D0%BE%D1%80%D0%BD%D1%8B%D0%B5/Screenshot_6.png)
 
 
 
@@ -37,37 +41,37 @@
 
 ## RecyclerView
 
-Для решения данной задачи нужно подключить к проекту зависимость в gradle файле, чтобы использовать RecyclerView: `implementation 'androidx.recyclerview:recyclerview:1.2.0-alpha06'`. В framgent_news.xml добавлен RecyclerView, с которым мы и будем работать. Далее создан layout, который будет отображать элемент списка RecyclerView. В нём находится 4 TextView, которые отображают картинку, название, автора и день публикации.
+ Создан Layout, который будет отображать элемент списка RecyclerView. В состав него входит: imageView + 2 текстовых поля.  Ресурс для ImageView выбирается из ресурсов drawable.
 
 ## NewsFragment
 
-В данном классе извлекаются наши исходный файл с данными, который размещён в `raw` ресурсах. Здесь к нашему RecyclerView подключается `LinearLayoutManager`, который позволяет располагать данные в виде списка. Далее при помощи метода `setHasFixedSize()` задаётся, что размер RecyclerView будет фиксированного размера, так как в исходном файле конечное число записей. Также к RecyclerView добавлен `DividerItemDecoration` при помощи метода `addItemDecoration()`, который позволяет разделить данные в списке для более удобного отображения. В конце подключается `Adapter `, на вход которому подаётся извлечённый нами исходный файл.
+В данном классе извлекаются наши исходный файл с данными, который размещён в `raw` ресурсах. Здесь к нашему RecyclerView подключается `LinearLayoutManager`, который позволяет располагать данные в виде списка, это наиболее удобный вариант в данном случае. Также к RecyclerView добавлен `DividerItemDecoration` - это специальный декоратор, который позволяет, при помощи метода `addItemDecoration()`, разделить данные в списке для более удобного отображения, используя горизонтальную линию. В конце подключается `Adapter `, на вход которому подаётся извлечённый нами исходный файл.
 
 ## Adapter
 
 Данный класс реализует адаптер для RecyclerView, обеспечивающий привязку данных к View, которые отображает RecyclerView (в нашем случае это TextView). `BibLibAdapter` содержит в себе вложенный статический класс `BibLibViewHolder`, который описывает представление элемента и данные о месте в RecyclerView. 
 
-В конструкторе класса `BibLibAdapter` считывается при помощи `InputStreamReader()` информация из файла и создаётся экземпляр класса `BibDatabase()` для работы с данными файла. 
+В конструкторе класса `BibLibAdapter`  `InputStreamReader()` считывает файл .bibtex, создаётся экземпляр класса `BibDatabase()`
 
 В методе `onCreateViewHolder()` создаётся экземпляр класса `LayoutInflater`, который позволяет из содержимого layout-файла создать View-элемент, и возвращается экземпляр нашего вложенного класса `BibLibViewHolder` с созданным View на входе.
 
-В методе `onBindViewHolder()` происходит отображение данных в указанной позиции, то есть он обновляет содержимое наших TextView. При помощи метода `getEntry()` получаем объект класса `BibEntry`, который позволяет извлекать данные из записи. Далее меняем отображаемый текст в наших TextView на нужные данные полей конкретной записи. При изменении типа записи используется конструкция switch case для разного визуального отображения записей разного типа.
+В методе `onBindViewHolder()` позволяет отобразить новые данные из .bibtex, экономя при этом ресурсы. 
 
-В методе `getItemCount()` выводится количество элементов в списке, то есть количество записей в файле.
+В методе `getItemCount()` выводится количество элементов в списке, в данном случае они == Integer.MAX_VALUE для бесконечного списка и database.size() для ограниченного списка.
 
 # 3. Бесконечный список
 
 Сделайте список из предыдущей задачи бесконечным: после последнего элемента все записи повторяются, начиная с первой.
 
-Для того, чтобы сделать список "бесконечным", нужно всего лишь изменить 2 строчки кода, а именно:
+Изменим наш адаптер:
 
-В методе `onBindViewHolder()` при получении экземпляра класса указать не просто позицию, а остаток от деления позиции на количество записей в файле.
+В методе `onBindViewHolder()` указываем не просто позицию, а берем остаток от деления на размер базы данных
 
-В методе `getItemCount()` возвращать не количество элементов в списке, а максимальное возможное число Integer.
+В методе `getItemCount()` возвращаем Integer.MAX_VALUE
 
 # Выводы:
 
-При выполнении данной лабораторной работы произведено ознакомление с принципами работы ABV: разработано приложение, выводящее все записи из `bibtex` файла на экран, используя библиотеку biblib и RecyclerView. Для отображения записей различного рода разработан адаптер `Adapter`. Все элементы из заданного файла выведены списком. Также код адаптера модифицирован так, чтобы после прокручивания последнего элемента, все записи повторялись, начиная с первого. А также написаны тесты.
+При выполнении данной лабораторной работы произведено ознакомление с принципами работы Recycler View, изучены особенности и различия между List View и Recycler. Получены базовые навыки написания тестов для тестирования библиотек, используя тесты JUnit. Созданы Adapter для работы с Recycler View и были добавлены Divider для создания визуальной составляющей и Linear Layout для отображения Entry линейно.
 
 # Приложение:
 
@@ -154,9 +158,7 @@
 ## Листинг 3: NewsFragment.java
 
 ```java
-public class MainActivity extends AppCompatActivity {
-
-    private RecyclerView recyclerView;public class NewsFragment extends Fragment {
+public class NewsFragment extends Fragment {
     private RecyclerView recyclerView;
     private AdapterBib adapterBib;
 
@@ -179,32 +181,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return view;
-    }
-}
-    private BibLibAdapter bibLibAdapter;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        InputStream publications = getResources().openRawResource(R.raw.publications_ferro_en);
-
-        recyclerView = findViewById(R.id.recycler_view);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-
-        recyclerView.setHasFixedSize(true);
-        RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(recyclerView.getContext(), layoutManager.getOrientation());
-        recyclerView.addItemDecoration(itemDecoration);
-
-        try {
-            bibLibAdapter = new BibLibAdapter(publications);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        recyclerView.setAdapter(bibLibAdapter);
     }
 }
 ```
@@ -232,10 +208,12 @@ public class AdapterBib extends RecyclerView.Adapter<AdapterBib.BibLibViewHolder
     @Override
     public void onBindViewHolder(@NonNull BibLibViewHolder holder, int position) {
         BibEntry entry = database.getEntry(position % database.size());
-        holder.textViewType.setText("А тут будет картинка");
+        if (position % database.size() == 1) holder.image.setImageResource(R.drawable.cup);
+        else if (position % database.size() == 2 ) holder.image.setImageResource(R.drawable.face);
+        else holder.image.setImageResource(R.drawable.cat);
         holder.textViewTitle.setText(entry.getField(Keys.TITLE));
         holder.textViewAuthor.setText(entry.getField(Keys.AUTHOR));
-        holder.textViewYear.setText(entry.getField(Keys.YEAR));
+
     }
 
     @Override
@@ -244,57 +222,59 @@ public class AdapterBib extends RecyclerView.Adapter<AdapterBib.BibLibViewHolder
     }
 
     static class BibLibViewHolder extends RecyclerView.ViewHolder {
-
-        TextView textViewType;
         TextView textViewTitle;
         TextView textViewAuthor;
-        TextView textViewYear;
+        ImageView image;
+
 
         public BibLibViewHolder(@NonNull View itemView) {
             super(itemView);
-            textViewType = itemView.findViewById(R.id.type);
+            image = itemView.findViewById(R.id.imageView);
             textViewTitle = itemView.findViewById(R.id.titleN);
             textViewAuthor = itemView.findViewById(R.id.author);
-            textViewYear = itemView.findViewById(R.id.year);
+
         }
     }
 }
+
 
 ```
 
 ### Листинг 5: BibDatabaseTest.java
 
-    @Test
-      public void strictModeThrowsException() throws IOException {
-        BibDatabase database = openDatabase("/mixed.bib");
-        BibConfig cfg = database.getCfg();
-        cfg.strict = true;BibEntry first = database.getEntry(0);
-    	for (int i = 0; i < cfg.maxValid - 1; i++) {
-      		BibEntry unused = database.getEntry(0);
-      		assertNotNull("Should not throw any exception @" + i, first.getType());
-    	}
-    
-    	try {
-      		BibEntry unused = database.getEntry(0);
-      		first.getType();
-      		fail();
-    	} catch (IllegalStateException e) {
-      		System.out.println("Throw IllegalStateException with message: " + 			e.getMessage());
-    	}
-    
-    @Test
-      public void shuffleFlag() throws IOException {
-        boolean check = false;
-        BibDatabase firstDatabase = openDatabase("/shuffle.bib");
-        BibConfig cfg = firstDatabase.getCfg();
-        cfg.shuffle = false;
-        BibEntry first = firstDatabase.getEntry(0); // always ARTICLE
-        for (int i = 0; i < 20; i++) {
-      		BibDatabase database = openDatabase("/shuffle.bib");
-      		BibConfig databaseCfg = database.getCfg();
-      		databaseCfg.shuffle = true;
-      		if (database.getEntry(0).getType() != first.getType()) check = true;
-    	}
-    	assertTrue(check);
-    }
+```java
+@Test
+  public void strictModeThrowsException() throws IOException {
+    BibDatabase database = openDatabase("/mixed.bib");
+    BibConfig cfg = database.getCfg();
+    cfg.strict = true;BibEntry first = database.getEntry(0);
+	for (int i = 0; i < cfg.maxValid - 1; i++) {
+  		BibEntry unused = database.getEntry(0);
+  		assertNotNull("Should not throw any exception @" + i, first.getType());
+	}
+
+	try {
+  		BibEntry unused = database.getEntry(0);
+  		first.getType();
+  		fail();
+	} catch (IllegalStateException e) {
+  		System.out.println("Throw IllegalStateException with message: " + 			e.getMessage());
+	}
+
+@Test
+  public void shuffleFlag() throws IOException {
+    boolean check = false;
+    BibDatabase firstDatabase = openDatabase("/shuffle.bib");
+    BibConfig cfg = firstDatabase.getCfg();
+    cfg.shuffle = false;
+    BibEntry first = firstDatabase.getEntry(0); // always ARTICLE
+    for (int i = 0; i < 20; i++) {
+  		BibDatabase database = openDatabase("/shuffle.bib");
+  		BibConfig databaseCfg = database.getCfg();
+  		databaseCfg.shuffle = true;
+  		if (database.getEntry(0).getType() != first.getType()) check = true;
+	}
+	assertTrue(check);
+}
+```
 
